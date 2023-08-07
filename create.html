@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Connections</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="description" content="" />
+    <!-- <link rel="icon" href="favicon.png" /> -->
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/milligram/1.4.1/milligram.css"
+    />
+  </head>
+  <body>
+    <style>
+      form {
+        margin: 2rem;
+      }
+
+      .error {
+        color: red;
+      }
+    </style>
+    <script type="text/javascript">
+      function getGame() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const game = urlParams.get("game");
+        if (game) {
+          return JSON.parse(atob(game));
+        }
+        return null;
+      }
+
+      function buildGameUrl(game) {
+        const url = new URL(window.location.origin + window.location.pathname);
+        url.searchParams.append("game", btoa(JSON.stringify(game)));
+        return url.toString();
+      }
+
+      function toObj(formData) {
+        let values = {};
+        formData.forEach((value, key) => (values[key] = value));
+        return values;
+      }
+
+      // the form needs a validation function. It should check that all fields are filled out and that each group has 4 items. It should display a message for each field if there are validation errors
+      function validateForm() {
+        let form = document.getElementById("game");
+        let inputs = form.querySelectorAll("input");
+        let errors = {};
+        let groups = form.querySelectorAll(".group");
+        groups.forEach((group) => {
+          let groupItems = group.value.split(",");
+          console.log("groupItems", groupItems);
+          if (groupItems.length !== 4) {
+            errors[group.name] = "must have exactly 4 items";
+          }
+        });
+
+        inputs.forEach((input) => {
+          if (!input.value) {
+            errors[input.name] = "required";
+          }
+        });
+
+        return errors;
+      }
+
+      // function fieldsRequired() {
+      //   let form = document.getElementById("game");
+      //   let inputs = form.querySelectorAll("input");
+      //   inputs.forEach((input) => {
+      //     if (!input.value) {
+      //       return false;
+      //     }
+      //   });
+      //   return true;
+      // }
+      // // each group# field needs exactly 4 items that are comma separated
+      // function validateGroup(group) {
+      //   let groupItems = group.split(",");
+      //   if (groupItems.length !== 4) {
+      //     return false;
+      //   }
+      //   return true;
+      // }
+
+      function validate() {}
+
+      function createGame(e) {
+        console.log("e.target.form", new FormData(e.target.form));
+        e.preventDefault();
+
+        document.querySelectorAll(".error").forEach((label) => {
+          label.classList.add("hidden");
+          label.innerText = "";
+        });
+        const result = validateForm();
+        const hasErrors = Object.keys(result).length > 0;
+        console.log("hasErrors", hasErrors, result);
+        if (hasErrors) {
+          Object.keys(result).forEach((key) => {
+            let label = document.querySelector(`label[for="${key}"]`);
+            label.innerText = result[key];
+            label.classList.remove("hidden");
+          });
+          window.gameUrl.innerText = "";
+          window.gameUrl.href = "";
+          window.gameUrlTitle.style.display = "none";
+          return;
+        }
+
+        let formData = toObj(new FormData(e.target.form));
+        let gameUrl = buildGameUrl(formData);
+        window.gameUrl.innerText = gameUrl;
+        window.gameUrl.href = gameUrl;
+        window.gameUrlTitle.style.display = "block";
+      }
+
+      window.onload = () => {
+        let game = getGame();
+        console.log("game", game);
+        if (game) {
+          window.gameUrl.innerText = window.location.href;
+          window.gameUrl.href = window.location.href;
+          window.gameUrlTitle.style.display = "block";
+
+          document.querySelectorAll("input").forEach((input) => {
+            input.value = game[input.name];
+          });
+        }
+      };
+    </script>
+
+    <form id="game" action="NONE" method="get">
+      <section>
+        <h1>Create Game</h1>
+
+        <label for="gameName" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="gameName"
+          placeholder="Game Name"
+        />
+        <label for="gameName" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="creator"
+          placeholder="Creator"
+        />
+      </section>
+
+      <section>
+        <h2>Group 1</h2>
+        <label for="group1Title" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group1Title"
+          placeholder="Group Title"
+        />
+        <label for="group1" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group1"
+          class="group"
+          placeholder="Group words (comma separated)"
+        />
+      </section>
+
+      <section>
+        <h2>Group 2</h2>
+        <label for="group2Title" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group2Title"
+          placeholder="Group Title"
+        />
+        <label for="group2" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group2"
+          class="group"
+          placeholder="Group words (comma separated)"
+        />
+      </section>
+
+      <section>
+        <h2>Group 3</h2>
+        <label for="group3Title" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group3Title"
+          placeholder="Group Title"
+        />
+        <label for="group3" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group3"
+          class="group"
+          placeholder="Group words (comma separated)"
+        />
+      </section>
+
+      <section>
+        <h2>Group 4</h2>
+        <label for="group4Title" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group4Title"
+          placeholder="Group Title"
+        />
+        <label for="group4" class="error hidden"></label>
+        <input
+          required
+          aria-required="true"
+          type="text"
+          name="group4"
+          class="group"
+          placeholder="Group words (comma separated)"
+        />
+      </section>
+      <section>
+        <button type="submit" onclick="createGame(event);" class="button">
+          Create Game
+        </button>
+
+        <h2 id="gameUrlTitle" style="display: none; margin-top: 2rem">
+          Game Url
+        </h2>
+        <a id="gameUrl" style="word-wrap: break-word"></a>
+      </section>
+    </form>
+  </body>
+</html>
