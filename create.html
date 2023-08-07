@@ -55,7 +55,9 @@
       function validateForm() {
         let form = document.getElementById("game");
         let inputs = form.querySelectorAll("input");
+
         let errors = {};
+
         let groups = form.querySelectorAll(".group");
         groups.forEach((group) => {
           let groupItems = group.value.split(",");
@@ -152,7 +154,7 @@
           name="gameName"
           placeholder="Game Name"
         />
-        <label for="gameName" class="error hidden"></label>
+        <label for="creator" class="error hidden"></label>
         <input
           required
           aria-required="true"
