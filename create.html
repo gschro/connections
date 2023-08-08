@@ -40,7 +40,11 @@
       }
 
       function buildGameUrl(game) {
-        const url = new URL(window.location.origin + window.location.pathname);
+        console.log(window.location.pathname);
+        const url = new URL(
+          window.location.origin +
+            window.location.pathname.replace("create.html", "play.html")
+        );
         url.searchParams.append("game", btoa(JSON.stringify(game)));
         return url.toString();
       }

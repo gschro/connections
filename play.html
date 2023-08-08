@@ -20,6 +20,96 @@
     />
   </head>
   <body>
-    <h1>Hello, world!</h1>
+    <script type="text/javascript">
+      function getGame() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const game = urlParams.get("game");
+        if (game) {
+          return JSON.parse(atob(game));
+        }
+        return null;
+      }
+
+      function isGameInvalid(game) {
+        let invalidGame = false;
+        if (!game) {
+          invalidGame = true;
+          return invalidGame;
+        }
+        for (const [key, value] of Object.entries(game)) {
+          if (!value) {
+            invalidGame = true;
+            break;
+          }
+
+          if (key.startsWith("group") && key.length === 6) {
+            if (value.split(",").length !== 4) {
+              invalidGame = true;
+              break;
+            }
+          }
+        }
+
+        return invalidGame;
+      }
+
+      function clickTile(event) {
+        let tile = event.target;
+        let selectedTiles =
+          document.getElementsByClassName("selected-tile").length;
+        let isSelected = tile.classList.contains("selected-tile");
+        if (!isSelected && selectedTiles > 3) {
+          return;
+        }
+
+        tile.classList.toggle("button-outline");
+        tile.classList.toggle("button-primary");
+        tile.classList.toggle("selected-tile");
+      }
+
+      function buildTiles({ group1, group2, group3, group4 }) {
+        let groups = [group1, group2, group3, group4];
+        let tiles = groups
+          .flatMap((group) => group.split(","))
+          .map((tile) => {
+            let button = document.createElement("button");
+            button.innerText = tile;
+            button.classList.add("button-outline");
+            button.onclick = clickTile;
+            window.tiles.appendChild(button);
+            return button;
+          });
+      }
+
+      window.onload = () => {
+        let game = getGame();
+
+        if (isGameInvalid(game)) {
+          console.log("game invalid");
+          // show message
+          return;
+        }
+        console.log("game", game);
+        window.gameName.innerText = game.name;
+        window.creator.innerText = game.creator;
+        buildTiles(game);
+      };
+    </script>
+    <main style="margin: 2rem">
+      <section>
+        <h1>Connections Game</h1>
+        <h2>Game Name: <span id="gameName"></span></h2>
+        <h3>Creator: <span id="creator"></span></h3>
+      </section>
+
+      <section id="tiles"></section>
+
+      <section>
+        <h4>Mistakes</h4>
+
+        <button>Submit</button>
+        <button>Shuffle</button>
+      </section>
+    </main>
   </body>
 </html>
