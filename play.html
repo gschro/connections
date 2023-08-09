@@ -20,7 +20,60 @@
     />
   </head>
   <body>
+    <style>
+      .tile {
+        width: 4rem;
+        height: 8rem;
+        flex: 1;
+        flex-basis: calc(25% - 1rem);
+        margin: 0;
+        justify-content: center;
+        align-items: center;
+        word-wrap: break-all;
+        padding-inline: 1rem;
+        font-size: 0.8rem;
+        white-space: nowrap;
+      }
+
+      #tiles,
+      #completed {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 1rem;
+      }
+
+      .group1 {
+        background-color: #00b500;
+        border-color: #00b500;
+      }
+      .group2 {
+        background-color: #cb20ff;
+        border-color: #cb20ff;
+      }
+      .group3 {
+        background-color: #ffbd00;
+        border-color: #ffbd00;
+      }
+      .group4 {
+        background-color: #005ffb;
+        border-color: #005ffb;
+      }
+
+      section {
+        padding: 1rem;
+      }
+    </style>
     <script type="text/javascript">
+      let game, groups, groupNames;
+
+      const boxes = {
+        group1: "🟩",
+        group2: "🟪",
+        group3: "🟨",
+        group4: "🟦",
+      };
+
       function getGame() {
         const urlParams = new URLSearchParams(window.location.search);
         const game = urlParams.get("game");
@@ -29,6 +82,8 @@
         }
         return null;
       }
+
+      function setupGame() {}
 
       function isGameInvalid(game) {
         let invalidGame = false;
@@ -68,27 +123,62 @@
       }
 
       function buildTiles({ group1, group2, group3, group4 }) {
-        let groups = [group1, group2, group3, group4];
+        groups = [group1, group2, group3, group4];
+        groupNames = ["group1", "group2", "group3", "group4"];
         let tiles = groups
           .flatMap((group) => group.split(","))
           .map((tile) => {
             let button = document.createElement("button");
+            // let buttonTitle = document.createElement("span");
             button.innerText = tile;
-            button.classList.add("button-outline");
+            button.classList.add("button-outline", "tile");
             button.onclick = clickTile;
+            // button.appendChild(buttonTitle);
             window.tiles.appendChild(button);
             return button;
           });
       }
 
+      function shuffle() {}
+
+      function submit() {
+        let tiles = Array.from(
+          document.getElementsByClassName("selected-tile")
+        );
+        let words = tiles.map((a) => a.innerText);
+        let results = groups.map((group) => {
+          console.log("words", words, "group", group);
+          let groupWords = group.split(",").sort();
+          let matches = groupWords.filter((word) => words.includes(word));
+          return matches.length;
+        });
+
+        if (results.indexOf(4) > -1) {
+          console.log("correct");
+          groups.splice(results.indexOf(4), 1);
+          let groupName = groupNames.splice(results.indexOf(4), 1)?.[0];
+          console.log("groupName", groupName);
+          tiles.forEach((a) => {
+            a.classList.add(groupName, "button-primary");
+            a.classList.remove("selected-tile");
+            window.completed.appendChild(a);
+          });
+          // correct
+        } else if (results.indexOf(3) > -1) {
+          console.log("1 away");
+          // 1 away
+        }
+      }
+
       window.onload = () => {
-        let game = getGame();
+        game = getGame();
 
         if (isGameInvalid(game)) {
           console.log("game invalid");
           // show message
           return;
         }
+
         console.log("game", game);
         window.gameName.innerText = game.name;
         window.creator.innerText = game.creator;
@@ -102,13 +192,14 @@
         <h3>Creator: <span id="creator"></span></h3>
       </section>
 
+      <section id="completed"></section>
       <section id="tiles"></section>
 
       <section>
         <h4>Mistakes</h4>
 
-        <button>Submit</button>
-        <button>Shuffle</button>
+        <button onclick="submit()">Submit</button>
+        <button onclick="shuffle()">Shuffle</button>
       </section>
     </main>
   </body>

@@ -28,6 +28,10 @@
       .error {
         color: red;
       }
+
+      input {
+        text-transform: uppercase;
+      }
     </style>
     <script type="text/javascript">
       function getGame() {
@@ -51,7 +55,7 @@
 
       function toObj(formData) {
         let values = {};
-        formData.forEach((value, key) => (values[key] = value));
+        formData.forEach((value, key) => (values[key] = value.toUpperCase()));
         return values;
       }
 
