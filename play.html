@@ -33,10 +33,10 @@
         padding-inline: 1rem;
         font-size: 0.8rem;
         white-space: nowrap;
+        padding: 0;
       }
 
-      #tiles,
-      #completed {
+      #tiles {
         display: flex;
         flex-wrap: wrap;
         width: 100%;
@@ -60,12 +60,138 @@
         border-color: #005ffb;
       }
 
+      button:focus {
+        background-color: #9b4dca;
+        border-color: #9b4dca;
+      }
+
       section {
         padding: 1rem;
       }
+
+      .lower {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .mistake {
+        border-radius: 100%;
+        background-color: gray;
+        width: 1rem;
+        height: 1rem;
+      }
+
+      .mistakes {
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 2rem;
+        flex-grow: 1;
+      }
+
+      .mistakes h4 {
+        margin: 0;
+      }
+
+      .controls {
+        display: flex;
+        flex-direction: row;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 2rem;
+      }
+
+      #completed {
+        gap: 1rem;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #completed div {
+        width: 100%;
+        padding: 1rem;
+        text-align: center;
+        color: #ffffff;
+        border-radius: 0.4rem;
+      }
+
+      #completed h3,
+      #completed p {
+        margin: 0;
+        width: 100%;
+      }
+
+      /* from: https://www.w3schools.com/howto/howto_js_snackbar.asp */
+      #snackbar {
+        visibility: hidden;
+        min-width: 250px;
+        margin-left: -125px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+        border-radius: 0.4rem;
+      }
+
+      #snackbar.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+      }
+
+      @-webkit-keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+
+      @keyframes fadein {
+        from {
+          bottom: 0;
+          opacity: 0;
+        }
+        to {
+          bottom: 30px;
+          opacity: 1;
+        }
+      }
+
+      @-webkit-keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
+
+      @keyframes fadeout {
+        from {
+          bottom: 30px;
+          opacity: 1;
+        }
+        to {
+          bottom: 0;
+          opacity: 0;
+        }
+      }
     </style>
     <script type="text/javascript">
-      let game, groups, groupNames;
+      let game, groups, groupNames, guesses;
 
       const boxes = {
         group1: "🟩",
@@ -73,6 +199,10 @@
         group3: "🟨",
         group4: "🟦",
       };
+
+      function random(min, max) {
+        return Math.floor(Math.random()(max - min + 1) + min);
+      }
 
       function getGame() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -125,26 +255,55 @@
       function buildTiles({ group1, group2, group3, group4 }) {
         groups = [group1, group2, group3, group4];
         groupNames = ["group1", "group2", "group3", "group4"];
-        let tiles = groups
-          .flatMap((group) => group.split(","))
-          .map((tile) => {
+        let tiles = shuffleArr(groups.flatMap((group) => group.split(","))).map(
+          (tile) => {
             let button = document.createElement("button");
-            // let buttonTitle = document.createElement("span");
             button.innerText = tile;
             button.classList.add("button-outline", "tile");
             button.onclick = clickTile;
-            // button.appendChild(buttonTitle);
             window.tiles.appendChild(button);
             return button;
-          });
+          }
+        );
       }
 
-      function shuffle() {}
+      function shuffleArr(array) {
+        let currentIndex = array.length,
+          randomIndex;
+
+        // While there remain elements to shuffle.
+        while (currentIndex != 0) {
+          // Pick a remaining element.
+          randomIndex = Math.floor(Math.random() * currentIndex);
+          currentIndex--;
+
+          // And swap it with the current element.
+          [array[currentIndex], array[randomIndex]] = [
+            array[randomIndex],
+            array[currentIndex],
+          ];
+        }
+
+        return array;
+      }
+
+      function shuffle() {
+        let tiles = Array.from(document.getElementsByClassName("tile"));
+        tiles = shuffleArr(tiles);
+        tiles.forEach((tile) => {
+          tile.classList.remove("selected-tile");
+          window.tiles.appendChild(tile);
+        });
+      }
 
       function submit() {
         let tiles = Array.from(
           document.getElementsByClassName("selected-tile")
         );
+        if (tiles.length !== 4) {
+          showToast("select 4 words!");
+          return;
+        }
         let words = tiles.map((a) => a.innerText);
         let results = groups.map((group) => {
           console.log("words", words, "group", group);
@@ -155,18 +314,53 @@
 
         if (results.indexOf(4) > -1) {
           console.log("correct");
-          groups.splice(results.indexOf(4), 1);
+          let group = groups.splice(results.indexOf(4), 1);
           let groupName = groupNames.splice(results.indexOf(4), 1)?.[0];
           console.log("groupName", groupName);
           tiles.forEach((a) => {
+            a.remove();
             a.classList.add(groupName, "button-primary");
             a.classList.remove("selected-tile");
-            window.completed.appendChild(a);
           });
+          let div = document.createElement("div");
+          let title = document.createElement("h3");
+          title.innerText = game[groupName + "Title"];
+          let words = document.createElement("p");
+          // console.log(
+          //   'group.split(",").join(", ")',
+          //   group.split(",").join(", ")
+          // );
+          console.log("group", group);
+          words.innerText = group[0].split(",").join(", ");
+          div.appendChild(title);
+          div.appendChild(words);
+          div.classList.add(groupName);
+          window.completed.appendChild(div);
           // correct
+          showToast("nice!");
         } else if (results.indexOf(3) > -1) {
-          console.log("1 away");
-          // 1 away
+          let mistakes = document.getElementsByClassName("mistake");
+          if (mistakes.length > 1) {
+            showToast("1 away");
+          } else {
+            showToast("better luck next time!");
+            window.submitBtn.disabled = true;
+            window.shuffleBtn.disabled = true;
+          }
+          document.getElementsByClassName("mistake")[0].remove();
+        } else {
+          let mistakes = document.getElementsByClassName("mistake");
+
+          if (mistakes.length > 1) {
+            showToast("not quite");
+          } else {
+            showToast("better luck next time!");
+            window.submitBtn.classList.add("disabled");
+            window.shuffleBtn.classList.add("disabled");
+            window.submitBtn.disabled = true;
+            window.shuffleBtn.disabled = true;
+          }
+          document.getElementsByClassName("mistake")[0].remove();
         }
       }
 
@@ -174,33 +368,55 @@
         game = getGame();
 
         if (isGameInvalid(game)) {
-          console.log("game invalid");
-          // show message
+          showToast("Game invalid!");
           return;
         }
 
         console.log("game", game);
-        window.gameName.innerText = game.name;
+        window.gameName.innerText = game.gameName;
         window.creator.innerText = game.creator;
         buildTiles(game);
       };
+
+      function showToast(value) {
+        // Get the snackbar DIV
+        var x = document.getElementById("snackbar");
+
+        // Add the "show" class to DIV
+        x.className = "show";
+
+        x.innerText = value;
+        // After 3 seconds, remove the show class from DIV
+        setTimeout(function () {
+          x.className = x.className.replace("show", "");
+        }, 3000);
+      }
     </script>
     <main style="margin: 2rem">
       <section>
-        <h1>Connections Game</h1>
-        <h2>Game Name: <span id="gameName"></span></h2>
-        <h3>Creator: <span id="creator"></span></h3>
+        <h1>Connections</h1>
+        <h2 id="gameName"></h2>
+        <h3 id="creator"></h3>
       </section>
 
       <section id="completed"></section>
       <section id="tiles"></section>
 
-      <section>
-        <h4>Mistakes</h4>
+      <section class="lower">
+        <div class="mistakes">
+          <h4>Mistakes</h4>
+          <div class="mistake"></div>
+          <div class="mistake"></div>
+          <div class="mistake"></div>
+          <div class="mistake"></div>
+        </div>
 
-        <button onclick="submit()">Submit</button>
-        <button onclick="shuffle()">Shuffle</button>
+        <div class="controls">
+          <button id="submitBtn" onclick="submit()">Submit</button>
+          <button id="shuffleBtn" onclick="shuffle()">Shuffle</button>
+        </div>
       </section>
     </main>
+    <div id="snackbar"></div>
   </body>
 </html>
