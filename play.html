@@ -195,7 +195,7 @@
       }
     </style>
     <script type="text/javascript">
-      let game, groups, groupNames, guesses;
+      let game, groups, groupNames, guesses, wordDict;
 
       const boxes = {
         group1: "🟩",
@@ -254,6 +254,19 @@
         tile.classList.toggle("button-outline");
         tile.classList.toggle("button-primary");
         tile.classList.toggle("selected-tile");
+      }
+
+      function buildWordDict({ group1, group2, group3, group4 }) {
+        wordDict = {};
+        let groups = {
+          group1,
+          group2,
+          group3,
+          group4,
+        };
+        Object.entries(groups).forEach(([group, value]) => {
+          value.split(",").forEach((word, i) => (wordDict[word] = group));
+        });
       }
 
       function buildTiles({ group1, group2, group3, group4 }) {
@@ -316,11 +329,28 @@
           return matches.length;
         });
 
+        let guess = words.sort().join(",");
+        console.log("guesses", guesses, guess, guesses[guess]);
+        // record guess
+        if (Object.hasOwn(guesses, guess)) {
+          showToast("already guessed!");
+          return;
+        } else {
+          guesses[guess] = Object.keys(guesses).length;
+          let res = Object.keys(guesses)
+            .map((guess) =>
+              guess
+                .split(",")
+                .map((a) => boxes[wordDict[a]])
+                .join("")
+            )
+            .join("\n");
+          console.log("result of guess", res);
+        }
+
         if (results.indexOf(4) > -1) {
-          console.log("correct");
           let group = groups.splice(results.indexOf(4), 1);
           let groupName = groupNames.splice(results.indexOf(4), 1)?.[0];
-          console.log("groupName", groupName);
           tiles.forEach((a) => {
             a.remove();
             a.classList.add(groupName, "button-primary");
@@ -330,11 +360,6 @@
           let title = document.createElement("h3");
           title.innerText = game[groupName + "Title"];
           let words = document.createElement("p");
-          // console.log(
-          //   'group.split(",").join(", ")',
-          //   group.split(",").join(", ")
-          // );
-          console.log("group", group);
           words.innerText = group[0].split(",").join(", ");
           div.appendChild(title);
           div.appendChild(words);
@@ -370,7 +395,6 @@
 
       window.onload = () => {
         game = getGame();
-
         if (isGameInvalid(game)) {
           showToast("Game invalid!");
           return;
@@ -380,6 +404,9 @@
         window.gameName.innerText = game.gameName;
         window.creator.innerText = game.creator;
         buildTiles(game);
+        buildWordDict(game);
+        guesses = {};
+
         window.createGame.href =
           window.location.origin +
           window.location.pathname.replace("play.html", "create.html");
