@@ -36,6 +36,10 @@
         padding: 0;
       }
 
+      .footer {
+        text-align: center;
+      }
+
       #tiles {
         display: flex;
         flex-wrap: wrap;
@@ -376,6 +380,9 @@
         window.gameName.innerText = game.gameName;
         window.creator.innerText = game.creator;
         buildTiles(game);
+        window.createGame.href =
+          window.location.origin +
+          window.location.pathname.replace("play.html", "create.html");
       };
 
       function showToast(value) {
@@ -415,6 +422,9 @@
           <button id="submitBtn" onclick="submit()">Submit</button>
           <button id="shuffleBtn" onclick="shuffle()">Shuffle</button>
         </div>
+      </section>
+      <section class="footer">
+        <a id="createGame" href="/create.html">Create your own game!</a>
       </section>
     </main>
     <div id="snackbar"></div>
