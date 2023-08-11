@@ -36,6 +36,10 @@
         padding: 0;
       }
 
+      .hidden {
+        display: none !important;
+      }
+
       .footer {
         text-align: center;
       }
@@ -195,7 +199,14 @@
       }
     </style>
     <script type="text/javascript">
-      let game, groups, groupNames, guesses, wordDict;
+      let game,
+        groups,
+        groupNames,
+        guesses,
+        wordDict,
+        results2,
+        guessesBoxes = [],
+        completedGroups = [];
 
       const boxes = {
         group1: "🟩",
@@ -265,7 +276,9 @@
           group4,
         };
         Object.entries(groups).forEach(([group, value]) => {
-          value.split(",").forEach((word, i) => (wordDict[word] = group));
+          value
+            .split(",")
+            .forEach((word, i) => (wordDict[word] = { group, i }));
         });
       }
 
@@ -308,12 +321,12 @@
         let tiles = Array.from(document.getElementsByClassName("tile"));
         tiles = shuffleArr(tiles);
         tiles.forEach((tile) => {
-          tile.classList.remove("selected-tile");
           window.tiles.appendChild(tile);
         });
       }
 
       function submit() {
+        let gameComplete = false;
         let tiles = Array.from(
           document.getElementsByClassName("selected-tile")
         );
@@ -322,49 +335,101 @@
           return;
         }
         let words = tiles.map((a) => a.innerText);
-        let results = groups.map((group) => {
-          console.log("words", words, "group", group);
-          let groupWords = group.split(",").sort();
-          let matches = groupWords.filter((word) => words.includes(word));
-          return matches.length;
-        });
+        console.log("wordz", words);
+        let results = groups
+          .filter((a) => completedGroups.indexOf(a) === -1)
+          .map((group, i) => {
+            let groupWords = group
+              .split(",")
+              .sort((a, b) => wordDict[a].i - wordDict[b].i);
+            console.log("groupWordz", groupWords);
+            let matches = groupWords.filter((word) => words.includes(word));
+            return { matches: matches.length, groupName: groupNames[i] };
+          });
+        console.log("results", results);
+        results2 = results;
+        resultsGroup = results.sort((a, b) => b.matches - a.matches)[0]
+          .groupName;
+        results = results.map((a) => a.matches);
 
-        let guess = words.sort().join(",");
-        console.log("guesses", guesses, guess, guesses[guess]);
+        console.log("resultsGroup", resultsGroup);
+        console.log("words", words);
+
+        let tempWords = [...words];
+        guessColors = [];
+        let guessBoxes = Object.entries(wordDict)
+          .filter(([word, a]) => a.group === resultsGroup)
+          .sort(([word1, a], [word2, b]) => a.i - b.i)
+          .map(([word, val]) => {
+            idx = tempWords.indexOf(word);
+            console.log("word", word, "val", val, idx);
+            if (idx === -1) {
+              // find first word not in group and remove
+              missWord = tempWords.filter(
+                (word) => wordDict[word].group !== resultsGroup
+              )[0];
+              idx = tempWords.indexOf(missWord);
+              let [miss] = tempWords.splice(idx, 1);
+              let boxColor = boxes[wordDict[miss].group];
+              console.log("miss", boxColor);
+              return boxColor;
+            } else {
+              console.log("hit");
+
+              tempWords.splice(idx, 1);
+              let boxColor = boxes[val.group];
+              return boxColor;
+            }
+          });
+
+        console.log("guess boxes", guessBoxes);
+        console.log("words", words);
+        let guess = words
+          .sort((a, b) => wordDict[a].i - wordDict[b].i)
+          .join(",");
+        console.log("guess", guess);
         // record guess
         if (Object.hasOwn(guesses, guess)) {
           showToast("already guessed!");
           return;
         } else {
           guesses[guess] = Object.keys(guesses).length;
-          let res = Object.keys(guesses)
-            .map((guess) =>
-              guess
-                .split(",")
-                .map((a) => boxes[wordDict[a]])
-                .join("")
-            )
-            .join("\n");
-          console.log("result of guess", res);
+          guessesBoxes.push(guessBoxes.join(""));
+          // let res = Object.keys(guesses)
+          //   .map((guess) =>
+          //     guess
+          //       .split(",")
+          //       .map((a) => boxes[wordDict[a].group])
+          //       .join("")
+          //   )
+          //   .join("\n");
+          console.log("guesses \n", guessesBoxes.join("\n"));
         }
-
+        console.log("results", results);
         if (results.indexOf(4) > -1) {
-          let group = groups.splice(results.indexOf(4), 1);
-          let groupName = groupNames.splice(results.indexOf(4), 1)?.[0];
+          completedGroups.push(resultsGroup);
+          // let group = groups.splice(results.indexOf(4), 1);
+          // let groupName = groupNames.splice(results.indexOf(4), 1)?.[0];
+          let groupTitle = game[resultsGroup + "Title"];
           tiles.forEach((a) => {
             a.remove();
-            a.classList.add(groupName, "button-primary");
-            a.classList.remove("selected-tile");
+            // a.classList.add(groupName, "button-primary");
+            // a.classList.remove("selected-tile");
           });
           let div = document.createElement("div");
           let title = document.createElement("h3");
-          title.innerText = game[groupName + "Title"];
+          title.innerText = groupTitle;
           let words = document.createElement("p");
-          words.innerText = group[0].split(",").join(", ");
+          words.innerText = game[resultsGroup].split(",").join(", ");
           div.appendChild(title);
           div.appendChild(words);
-          div.classList.add(groupName);
+          div.classList.add(resultsGroup);
           window.completed.appendChild(div);
+
+          Array.from(document.getElementsByClassName("lower")).forEach((a) =>
+            a.classList.add("hidden")
+          );
+
           // correct
           showToast("nice!");
         } else if (results.indexOf(3) > -1) {
@@ -390,6 +455,21 @@
             window.shuffleBtn.disabled = true;
           }
           document.getElementsByClassName("mistake")[0].remove();
+        }
+        console.log(
+          !Array.from(document.getElementsByClassName("selected-tile")).length,
+          document.getElementsByClassName("mistake")
+        );
+        const isGameComplete =
+          !Array.from(document.getElementsByClassName("selected-tile"))
+            .length ||
+          !Array.from(document.getElementsByClassName("mistake")).length;
+        console.log("gameComplee", isGameComplete);
+        if (isGameComplete) {
+          console.log("completed");
+          window.share.innerText = guessesBoxes.join("\n");
+          window.share.classList.remove("hidden");
+          window.lower.classList.add("hidden");
         }
       }
 
@@ -436,7 +516,7 @@
       <section id="completed"></section>
       <section id="tiles"></section>
 
-      <section class="lower">
+      <section id="lower" class="lower">
         <div class="mistakes">
           <h4>Mistakes</h4>
           <div class="mistake"></div>
@@ -450,6 +530,7 @@
           <button id="shuffleBtn" onclick="shuffle()">Shuffle</button>
         </div>
       </section>
+      <section id="share" class="hidden"></section>
       <section class="footer">
         <a id="createGame" href="/create.html">Create your own game!</a>
       </section>

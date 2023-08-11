@@ -56,7 +56,13 @@
       function toObj(formData) {
         let values = {};
         formData.forEach(
-          (value, key) => (values[key] = value.toUpperCase().trim())
+          (value, key) =>
+            (values[key] = value
+              .toUpperCase()
+              .split(",")
+              .map((a) => a.trim())
+              .join(",")
+              .trim())
         );
         return values;
       }
