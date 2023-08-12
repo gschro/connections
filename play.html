@@ -83,6 +83,14 @@
         align-items: center;
       }
 
+      #share {
+        display: flex;
+        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        gap: 2rem;
+      }
+
       .mistake {
         border-radius: 100%;
         background-color: gray;
@@ -300,14 +308,10 @@
       function shuffleArr(array) {
         let currentIndex = array.length,
           randomIndex;
-
-        // While there remain elements to shuffle.
         while (currentIndex != 0) {
-          // Pick a remaining element.
           randomIndex = Math.floor(Math.random() * currentIndex);
           currentIndex--;
 
-          // And swap it with the current element.
           [array[currentIndex], array[randomIndex]] = [
             array[randomIndex],
             array[currentIndex],
@@ -335,25 +339,19 @@
           return;
         }
         let words = tiles.map((a) => a.innerText);
-        console.log("wordz", words);
         let results = groups
           .filter((a) => completedGroups.indexOf(a) === -1)
           .map((group, i) => {
             let groupWords = group
               .split(",")
               .sort((a, b) => wordDict[a].i - wordDict[b].i);
-            console.log("groupWordz", groupWords);
             let matches = groupWords.filter((word) => words.includes(word));
             return { matches: matches.length, groupName: groupNames[i] };
           });
-        console.log("results", results);
         results2 = results;
         resultsGroup = results.sort((a, b) => b.matches - a.matches)[0]
           .groupName;
         results = results.map((a) => a.matches);
-
-        console.log("resultsGroup", resultsGroup);
-        console.log("words", words);
 
         let tempWords = [...words];
         guessColors = [];
@@ -362,7 +360,6 @@
           .sort(([word1, a], [word2, b]) => a.i - b.i)
           .map(([word, val]) => {
             idx = tempWords.indexOf(word);
-            console.log("word", word, "val", val, idx);
             if (idx === -1) {
               // find first word not in group and remove
               missWord = tempWords.filter(
@@ -371,23 +368,17 @@
               idx = tempWords.indexOf(missWord);
               let [miss] = tempWords.splice(idx, 1);
               let boxColor = boxes[wordDict[miss].group];
-              console.log("miss", boxColor);
               return boxColor;
             } else {
-              console.log("hit");
-
               tempWords.splice(idx, 1);
               let boxColor = boxes[val.group];
               return boxColor;
             }
           });
 
-        console.log("guess boxes", guessBoxes);
-        console.log("words", words);
         let guess = words
           .sort((a, b) => wordDict[a].i - wordDict[b].i)
           .join(",");
-        console.log("guess", guess);
         // record guess
         if (Object.hasOwn(guesses, guess)) {
           showToast("already guessed!");
@@ -395,26 +386,12 @@
         } else {
           guesses[guess] = Object.keys(guesses).length;
           guessesBoxes.push(guessBoxes.join(""));
-          // let res = Object.keys(guesses)
-          //   .map((guess) =>
-          //     guess
-          //       .split(",")
-          //       .map((a) => boxes[wordDict[a].group])
-          //       .join("")
-          //   )
-          //   .join("\n");
-          console.log("guesses \n", guessesBoxes.join("\n"));
         }
-        console.log("results", results);
         if (results.indexOf(4) > -1) {
           completedGroups.push(resultsGroup);
-          // let group = groups.splice(results.indexOf(4), 1);
-          // let groupName = groupNames.splice(results.indexOf(4), 1)?.[0];
           let groupTitle = game[resultsGroup + "Title"];
           tiles.forEach((a) => {
             a.remove();
-            // a.classList.add(groupName, "button-primary");
-            // a.classList.remove("selected-tile");
           });
           let div = document.createElement("div");
           let title = document.createElement("h3");
@@ -425,10 +402,6 @@
           div.appendChild(words);
           div.classList.add(resultsGroup);
           window.completed.appendChild(div);
-
-          Array.from(document.getElementsByClassName("lower")).forEach((a) =>
-            a.classList.add("hidden")
-          );
 
           // correct
           showToast("nice!");
@@ -456,20 +429,55 @@
           }
           document.getElementsByClassName("mistake")[0].remove();
         }
-        console.log(
-          !Array.from(document.getElementsByClassName("selected-tile")).length,
+
+        let hasTiles = !Array.from(document.getElementsByClassName("tile"))
+          .length;
+        let hasMistakes = !Array.from(
           document.getElementsByClassName("mistake")
-        );
-        const isGameComplete =
-          !Array.from(document.getElementsByClassName("selected-tile"))
-            .length ||
-          !Array.from(document.getElementsByClassName("mistake")).length;
-        console.log("gameComplee", isGameComplete);
+        ).length;
+        const isGameComplete = hasTiles || hasMistakes;
         if (isGameComplete) {
-          console.log("completed");
-          window.share.innerText = guessesBoxes.join("\n");
+          let guessesDiv = document.createElement("div");
+          guessesDiv.id = "guesses";
+          guessesDiv.innerHTML = guessesBoxes.join("<br />");
+          window.share.prepend(guessesDiv);
           window.share.classList.remove("hidden");
           window.lower.classList.add("hidden");
+
+          let tiles = Array.from(document.getElementsByClassName("tile"));
+          tiles.forEach((a) => {
+            a.remove();
+          });
+          groupNames
+            .filter((a) => completedGroups.indexOf(a) === -1)
+            .forEach((g) => {
+              let div = document.createElement("div");
+              let title = document.createElement("h3");
+              title.innerText = game[g + "Title"];
+              let words = document.createElement("p");
+              words.innerText = game[g].split(",").join(", ");
+              div.appendChild(title);
+              div.appendChild(words);
+              div.classList.add(g);
+              window.completed.appendChild(div);
+            });
+        }
+      }
+
+      // thanks https://www.freecodecamp.org/news/copy-text-to-clipboard-javascript/
+      async function copyResults() {
+        let results = document
+          .getElementById("guesses")
+          .innerHTML.replaceAll("<br>", "\n");
+        let copyText = `Connections: ${game.gameName}
+        By: ${game.creator}
+
+        ${results}`.replace(/  +/g, "");
+        try {
+          await navigator.clipboard.writeText(copyText);
+          showToast("results copied to clipboard!");
+        } catch (err) {
+          showToast("Failed to copy results! :(");
         }
       }
 
@@ -480,7 +488,6 @@
           return;
         }
 
-        console.log("game", game);
         window.gameName.innerText = game.gameName;
         window.creator.innerText = game.creator;
         buildTiles(game);
@@ -493,14 +500,10 @@
       };
 
       function showToast(value) {
-        // Get the snackbar DIV
         var x = document.getElementById("snackbar");
-
-        // Add the "show" class to DIV
         x.className = "show";
-
         x.innerText = value;
-        // After 3 seconds, remove the show class from DIV
+
         setTimeout(function () {
           x.className = x.className.replace("show", "");
         }, 3000);
@@ -510,7 +513,7 @@
       <section>
         <h1>Connections</h1>
         <h2 id="gameName"></h2>
-        <h3 id="creator"></h3>
+        <h3>By: <span id="creator"></span></h3>
       </section>
 
       <section id="completed"></section>
@@ -530,7 +533,9 @@
           <button id="shuffleBtn" onclick="shuffle()">Shuffle</button>
         </div>
       </section>
-      <section id="share" class="hidden"></section>
+      <section id="share" class="hidden">
+        <button class="btn" onclick="copyResults()">Copy Results</button>
+      </section>
       <section class="footer">
         <a id="createGame" href="/create.html">Create your own game!</a>
       </section>
