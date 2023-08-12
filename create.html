@@ -74,10 +74,10 @@
 
         let errors = {};
 
-        let groups = form.querySelectorAll(".group");
+        let groups = Array.from(form.querySelectorAll(".group"));
         groups.forEach((group) => {
           let groupItems = group.value.split(",");
-          console.log("groupItems", groupItems);
+
           if (groupItems.length !== 4) {
             errors[group.name] = "must have exactly 4 items";
           }
@@ -92,26 +92,27 @@
         return errors;
       }
 
-      // function fieldsRequired() {
-      //   let form = document.getElementById("game");
-      //   let inputs = form.querySelectorAll("input");
-      //   inputs.forEach((input) => {
-      //     if (!input.value) {
-      //       return false;
-      //     }
-      //   });
-      //   return true;
-      // }
-      // // each group# field needs exactly 4 items that are comma separated
-      // function validateGroup(group) {
-      //   let groupItems = group.split(",");
-      //   if (groupItems.length !== 4) {
-      //     return false;
-      //   }
-      //   return true;
-      // }
+      function validate() {
+        let form = document.getElementById("game");
+        let values = new Set();
+        let groups = Array.from(form.querySelectorAll(".group"));
+        groups.forEach((group) => {
+          let groupItems = group.value.split(",");
+          groupItems.forEach((item) => {
+            values.add(item);
+          });
+        });
 
-      function validate() {}
+        let isValid = values.size === 16;
+        console.log("valid values", values);
+        if (!isValid) {
+          console.log("oops error");
+          window.gamevalid.innerText = "must have at least 16 unique items";
+          window.gamevalid.classList.remove("hidden");
+        }
+
+        return isValid;
+      }
 
       function createGame(e) {
         console.log("e.target.form", new FormData(e.target.form));
@@ -123,7 +124,6 @@
         });
         const result = validateForm();
         const hasErrors = Object.keys(result).length > 0;
-        console.log("hasErrors", hasErrors, result);
         if (hasErrors) {
           Object.keys(result).forEach((key) => {
             let label = document.querySelector(`label[for="${key}"]`);
@@ -132,7 +132,12 @@
           });
           window.gameUrl.innerText = "";
           window.gameUrl.href = "";
-          window.gameUrlTitle.style.display = "none";
+          window.gameUrlButton.style.display = "none";
+          return;
+        }
+
+        let isValid = validate();
+        if (!isValid) {
           return;
         }
 
@@ -140,7 +145,16 @@
         let gameUrl = buildGameUrl(formData);
         window.gameUrl.innerText = gameUrl;
         window.gameUrl.href = gameUrl;
-        window.gameUrlTitle.style.display = "block";
+        window.gameUrlButton.style.display = "block";
+      }
+
+      // thanks https://www.freecodecamp.org/news/copy-text-to-clipboard-javascript/
+      async function copyGameUrl(e) {
+        e.preventDefault();
+        let gameUrl = window.gameUrl.innerText;
+        try {
+          await navigator.clipboard.writeText(gameUrl);
+        } catch (err) {}
       }
 
       window.onload = () => {
@@ -149,7 +163,7 @@
         if (game) {
           window.gameUrl.innerText = window.location.href;
           window.gameUrl.href = window.location.href;
-          window.gameUrlTitle.style.display = "block";
+          window.gameUrlButton.style.display = "block";
 
           document.querySelectorAll("input").forEach((input) => {
             input.value = game[input.name];
@@ -262,15 +276,20 @@
           class="group"
           placeholder="Group words (comma separated)"
         />
+
+        <label id="gamevalid" class="error hidden"></label>
       </section>
       <section>
-        <button type="submit" onclick="createGame(event);" class="button">
+        <button
+          id="gameUrlButton"
+          type="submit"
+          onclick="createGame(event);"
+          class="button"
+        >
           Create Game
         </button>
 
-        <h2 id="gameUrlTitle" style="display: none; margin-top: 2rem">
-          Game Url
-        </h2>
+        <button class="btn" onclick="copyGameUrl(event)">Copy Game URL</button>
         <a id="gameUrl" style="word-wrap: break-word"></a>
       </section>
     </form>
