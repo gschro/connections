@@ -227,13 +227,28 @@
         return Math.floor(Math.random()(max - min + 1) + min);
       }
 
-      function getGame() {
+      async function getGame() {
         const urlParams = new URLSearchParams(window.location.search);
-        const game = urlParams.get("game");
-        if (game) {
-          return JSON.parse(atob(game));
+        const gameId = urlParams.get("game");
+
+        try {
+          const response = await fetch(
+            "https://t2xqgnnxbk.execute-api.us-east-1.amazonaws.com/prod/connections/" +
+              gameId
+          );
+
+          if (response.ok) {
+            const resp = await response.json();
+            console.log("game", resp);
+            return resp;
+          } else {
+            console.error("error getting game", response);
+            showToast("error loading game");
+          }
+        } catch (e) {
+          console.error(e);
+          showToast("error loading game");
         }
-        return null;
       }
 
       function setupGame() {}
@@ -481,8 +496,9 @@
         }
       }
 
-      window.onload = () => {
-        game = getGame();
+      window.onload = async () => {
+        const resp = await getGame();
+        game = resp.game;
         if (isGameInvalid(game)) {
           showToast("Game invalid!");
           return;

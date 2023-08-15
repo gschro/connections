@@ -32,25 +32,72 @@
       input {
         text-transform: uppercase;
       }
+
+      .hidden {
+        display: none;
+      }
     </style>
     <script type="text/javascript">
-      function getGame() {
+      async function getGame() {
         const urlParams = new URLSearchParams(window.location.search);
-        const game = urlParams.get("game");
-        if (game) {
-          return JSON.parse(atob(game));
+        const gameId = urlParams.get("game");
+
+        if (!gameId) {
+          return;
         }
-        return null;
+
+        try {
+          const response = await fetch(
+            "https://t2xqgnnxbk.execute-api.us-east-1.amazonaws.com/prod/connections/" +
+              gameId
+          );
+
+          if (response.ok) {
+            const resp = await response.json();
+            return resp;
+          } else {
+            console.error("error getting game", response);
+            alert("error loading game");
+          }
+        } catch (e) {
+          console.error(e);
+          alert("error loading game");
+        }
       }
 
-      function buildGameUrl(game) {
-        console.log(window.location.pathname);
-        const url = new URL(
-          window.location.origin +
-            window.location.pathname.replace("create.html", "play.html")
-        );
-        url.searchParams.append("game", btoa(JSON.stringify(game)));
-        return url.toString();
+      async function buildGameUrl(game) {
+        try {
+          const response = await fetch(
+            "https://t2xqgnnxbk.execute-api.us-east-1.amazonaws.com/prod/connections",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ game }),
+            }
+          );
+          if (response.ok) {
+            const { id } = await response.json();
+            const url = new URL(window.location.origin + "/play.html");
+            url.searchParams.append("game", id);
+            const gameUrl = url.toString();
+
+            window.gameUrl.innerText = gameUrl;
+            window.gameUrl.href = gameUrl;
+            window.gameUrlButton.style.display = "block";
+          } else {
+            console.error(error);
+            window.gamevalid.innerText =
+              "unable to create game, please try again later";
+            window.gamevalid.classList.remove("hidden");
+          }
+        } catch (e) {
+          console.error(error);
+          window.gamevalid.innerText =
+            "unable to create game, please try again later";
+          window.gamevalid.classList.remove("hidden");
+        }
       }
 
       function toObj(formData) {
@@ -104,9 +151,7 @@
         });
 
         let isValid = values.size === 16;
-        console.log("valid values", values);
         if (!isValid) {
-          console.log("oops error");
           window.gamevalid.innerText = "must have at least 16 unique items";
           window.gamevalid.classList.remove("hidden");
         }
@@ -114,8 +159,7 @@
         return isValid;
       }
 
-      function createGame(e) {
-        console.log("e.target.form", new FormData(e.target.form));
+      async function createGame(e) {
         e.preventDefault();
 
         document.querySelectorAll(".error").forEach((label) => {
@@ -142,10 +186,7 @@
         }
 
         let formData = toObj(new FormData(e.target.form));
-        let gameUrl = buildGameUrl(formData);
-        window.gameUrl.innerText = gameUrl;
-        window.gameUrl.href = gameUrl;
-        window.gameUrlButton.style.display = "block";
+        await buildGameUrl(formData);
       }
 
       // thanks https://www.freecodecamp.org/news/copy-text-to-clipboard-javascript/
@@ -157,12 +198,13 @@
         } catch (err) {}
       }
 
-      window.onload = () => {
-        let game = getGame();
-        console.log("game", game);
-        if (game) {
-          window.gameUrl.innerText = window.location.href;
-          window.gameUrl.href = window.location.href;
+      window.onload = async () => {
+        let resp = await getGame();
+        if (resp) {
+          const { id, game } = resp;
+          const gameUrl = window.location.origin + "/play.html?game=" + id;
+          window.gameUrl.innerText = gameUrl;
+          window.gameUrl.href = gameUrl;
           window.gameUrlButton.style.display = "block";
 
           document.querySelectorAll("input").forEach((input) => {
@@ -280,16 +322,17 @@
         <label id="gamevalid" class="error hidden"></label>
       </section>
       <section>
-        <button
-          id="gameUrlButton"
-          type="submit"
-          onclick="createGame(event);"
-          class="button"
-        >
+        <button type="submit" onclick="createGame(event);" class="button">
           Create Game
         </button>
 
-        <button class="btn" onclick="copyGameUrl(event)">Copy Game URL</button>
+        <button
+          id="gameUrlButton"
+          class="btn hidden"
+          onclick="copyGameUrl(event)"
+        >
+          Copy Game URL
+        </button>
         <a id="gameUrl" style="word-wrap: break-word"></a>
       </section>
     </form>
