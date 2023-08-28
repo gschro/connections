@@ -79,7 +79,9 @@
           );
           if (response.ok) {
             const { id } = await response.json();
-            const url = new URL(window.location.origin + "/play.html");
+            const url = new URL(
+              window.location.origin + "/connections/play.html"
+            );
             url.searchParams.append("game", id);
             const gameUrl = url.toString();
 
@@ -202,7 +204,8 @@
         let resp = await getGame();
         if (resp) {
           const { id, game } = resp;
-          const gameUrl = window.location.origin + "/play.html?game=" + id;
+          const gameUrl =
+            window.location.origin + "/connections/play.html?game=" + id;
           window.gameUrl.innerText = gameUrl;
           window.gameUrl.href = gameUrl;
           window.gameUrlButton.style.display = "block";
